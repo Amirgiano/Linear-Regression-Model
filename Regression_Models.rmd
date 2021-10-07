@@ -1,0 +1,97 @@
+## Setup
+In this chapter we will start from the linear regression model and then pass to non linear models.
+I will compare both R and Python along this code.
+
+```{r}
+#Importing libraries and dataset.
+library(rmarkdown)
+library(tidyverse)
+data = read.csv('1.01.+Simple+linear+regression.csv') 
+
+#data.head() #Python
+```
+```{r}
+head(data)
+```
+
+We are going to use the supervised learning for predicting the Salary (Target Variable) in base of the college GPA (Regressor/Covariate).
+Quick Note: Supervised learning is when we have parameters/features/inputs to predict the outcomes.
+```{r}
+#Qucik check of the data structure:
+str(data)
+#I don't like how my target varibale is in dataset.
+colnames(data)[1]='Salary'
+head(data)
+```
+Before moving to the linear model let's visualize the data to see whether they have a linear correlation.
+
+```{r}
+library(ggplot2)
+data %>% 
+  ggplot(aes(x=GPA, y=Salary))+
+  geom_point(col="blue")+
+  geom_smooth()
+  
+```
+It seems to have a linear correlation. Now let's go further and see the details. (P.s remember correlation doesn't imply causation)
+
+## Linear Model
+
+```{r}
+#Splitting dataset into train (80%) and test(20%) to find an accuracy of the model.
+set.seed(1)
+train_index = sample(1:nrow(data),0.8*nrow(data),replace = FALSE)
+
+train_data= data[train_index,]
+test_data=data[-train_index,]
+```
+
+Linear regression model
+```{r}
+reg_lm = lm(Salary ~ GPA, data=train_data)
+summary(reg_lm)
+
+```
+Coefficents: GPA 256 means by increase of 1 GPA you get 256$ more in your salary.
+P-Value: Is less than 0.005 means that we reject the null hypothesis
+
+```{r}
+train_data %>% 
+  ggplot(aes(GPA, Salary)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+To see whether the training data is valid to predict or not we run the predict function. 
+```{r}
+lm_pred = reg_lm %>% predict(test_data)
+#Model Performace with Mean Square Errors and Correlation Rate.
+
+lm_perf = 
+  data.frame(
+    MSE = sqrt(mean((lm_pred - test_data$Salary)^2)),
+    COR = cor(lm_pred, test_data$Salary)
+)
+lm_perf
+```
+In regression model, the most commonly known evaluation metrics include:
+
+R-squared (R2), which is the proportion of variation in the outcome that is explained by the predictor variables. In multiple regression models, R2 corresponds to the squared correlation between the observed outcome values and the predicted values by the model. The Higher the R-squared, the better the model.
+
+Root Mean Squared Error (RMSE), which measures the average error performed by the model in predicting the outcome for an observation. Mathematically, the RMSE is the square root of the mean squared error (MSE), which is the average squared difference between the observed actual outome values and the values predicted by the model. So, MSE = mean((observeds - predicteds)^2) and RMSE = sqrt(MSE). The lower the RMSE, the better the model.
+
+Residual Standard Error (RSE), also known as the model sigma, is a variant of the RMSE adjusted for the number of predictors in the model. The lower the RSE, the better the model. In practice, the difference between RMSE and RSE is very small, particularly for large multivariate data.
+
+Mean Absolute Error (MAE), like the RMSE, the MAE measures the prediction error. Mathematically, it is the average absolute difference between observed and predicted outcomes, MAE = mean(abs(observeds - predicteds)). MAE is less sensitive to outliers compared to RMSE. (Source: http://www.sthda.com/english/articles/38-regression-model-validation/158-regression-model-accuracy-metrics-r-square-aic-bic-cp-and-more/)
+
+## Let's now predict a random GPA and find what is going to be a salary
+
+```{r}
+salary= reg_lm %>% predict(tibble(GPA = 3.45,1))
+salary
+
+```
+
+Conclusion with 0.72 Correlation rate the salary of a person who has graduates with 3.45 will be 1867.255.
+
+
+
